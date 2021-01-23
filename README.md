@@ -25,4 +25,4 @@ A hardware extension that adds IR capability to your PC / laptop, making it remo
 
 ![](snapshot.png)
 
-![](IRTyping.gif
+![](IRTyping.gif)
