@@ -48,7 +48,7 @@ clickThresholdTime = 100
 typingIndex = 0
 
 mouseAcceleration = 0.25
-mouseStopThresholdTime = 200
+mouseStopThresholdTime = 500
 mouseInitialSpeed = 5
 mouseMaxSpeed = 30
 mouseSpeed = 0
