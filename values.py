@@ -1,0 +1,2 @@
+ARDUINO_PORT = '/dev/ttyUSB0'
+BAUD_RATE = '9600'
