@@ -25,7 +25,7 @@ arduino = Serial(ARDUINO_PORT, BAUD_RATE, timeout=0.1)
 # Application configuration
 windowSize = [400,450]
 windowLocation = [750,200]
-windowTitle = "IR Receiver"
+windowTitle = "IR +"
 window = Tk()
 
 # Pynput configuration
@@ -43,7 +43,7 @@ configMap = {}
 lastAction = ''
 lastActionTime = 0
 thresholdTime = 700
-typingThresholdTime = 200
+typingThresholdTime = 100
 clickThresholdTime = 100
 typingIndex = 0
 
