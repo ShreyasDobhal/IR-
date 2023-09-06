@@ -31,8 +31,13 @@ A hardware extension that adds IR capability to your PC / laptop, making it remo
 
 **Step 1)** Install the required modules.
 
-`pip install pyserial`
-`pip install pynput`
+```
+pip install pyserial
+```
+
+```
+pip install pynput
+```
 
 **Step 2)** Install Arduino IDE
 
@@ -58,7 +63,9 @@ for port, desc, hwid in sorted(ports):
 
 **Step 1)** Run the main.py file
 
-`python main.py`
+```
+python main.py
+```
 
 **Step 2)** Reset any old existing configuration, using the "Reset" button
 
