@@ -1,5 +1,6 @@
 # Tkinter modules
 from tkinter import *
+from toast_message import show_toast
 
 # Arduino modules
 import serial 
@@ -8,7 +9,7 @@ from serial import Serial
 # Importing constants
 from values import ARDUINO_PORT, BAUD_RATE, WINDOW_SIZE, WINDOW_LOCATION
 from colors import color
-from controls import actions
+from controls import actions, combine_actions
 
 # Modules to control keyboard and mouse
 from pynput.mouse import Button as MouseButton, Controller as MouseController
@@ -19,6 +20,7 @@ from time import sleep
 from time import time
 import pickle
 
+
 # Setup arduino
 arduino = Serial(ARDUINO_PORT, BAUD_RATE, timeout=0.1)
 
@@ -27,12 +29,14 @@ windowSize = WINDOW_SIZE
 windowLocation = WINDOW_LOCATION
 windowTitle = "IR +"
 window = Tk()
+# # Hide the main tkinter window
+# window.withdraw()
 
 # Pynput configuration
 mouse = MouseController()
 keyboard = KeyController()
 
-commandOptions = actions
+commandOptions = combine_actions(actions.values())
 isReceiverRunning = False
 performActionFlag = None
 toggleBtnText = None
@@ -46,6 +50,8 @@ thresholdTime = 700
 typingThresholdTime = 100
 clickThresholdTime = 100
 typingIndex = 0
+actionMode = None
+availableModes = []
 
 mouseAcceleration = 0.25
 mouseStopThresholdTime = 500
@@ -70,18 +76,58 @@ def resetConfiguration():
     messageLabelText.set('Saved configurations cleared !')
 
 def saveCommand():
-    global configMap
+    global configMap, availableModes
     if decodedSignal == '':
         return
-    print(decodedSignal, ' => ', commandBoxText.get())
-    configMap[decodedSignal] = commandBoxText.get()
+    action = commandBoxText.get()
+    if decodedSignal in configMap:
+        # We already have some action saved for this signal.
+        previous_action = configMap[decodedSignal]
+        if isinstance(previous_action, list):
+            configMap[decodedSignal] = [action, *previous_action]
+        else:
+            configMap[decodedSignal] = [action, previous_action]
+    else:
+        configMap[decodedSignal] = action
+
+    print(decodedSignal, ' => ', configMap[decodedSignal])
+
+    # Save the config data in pickle file.
     with open(PICKLE_FILE_PATH, 'wb') as handle:
         pickle.dump(configMap, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    messageLabelText.set('Saved !')
 
+    # Update the list of available modes.
+    availableModes = getAvailableModes()
+
+    messageLabelText.set('Saved !')
+    show_toast(window, 'Saved!')
+
+def getAvailableModes():
+    global configMap
+    used_actions = combine_actions([
+        action
+        if isinstance(action, list)
+        else [action]
+        for action in configMap.values()
+    ])
+    modes = list(filter(
+        lambda mode: set(actions[mode]) & set(used_actions),
+        actions.keys()
+    ))
+
+    ignore_mode = 'App commands'
+    if ignore_mode in modes:
+        modes.remove(ignore_mode)
+
+    return modes
 
 def startIRThread():
-    global isReceiverRunning, toggleBtnText
+    global availableModes, isReceiverRunning, toggleBtnText
+
+    # Update the list of available modes.
+    availableModes = getAvailableModes()
+    print(availableModes)
+
     isReceiverRunning = True
     toggleBtnText.set('Stop')
     IR_Thread = Thread(target=startDetection)
@@ -162,13 +208,29 @@ def performTyping(action):
     
 
 def performAction(action):
-    global lastAction, lastActionTime, mouseSpeed
+    global lastAction, lastActionTime, mouseSpeed, availableModes, actionMode
     # TODO: Add implementation here
+
+    if actionMode is None:
+        # No action mode set, use the default action assigned.
+        if isinstance(action, list):
+            # Use the first action.
+            action = action[0]
+    else:
+        if isinstance(action, list):
+            # Use the action matching the current action mode.
+            matching_actions = list(filter(lambda action_command:action_command in action, actions[actionMode]))
+            if len(matching_actions) == 0:
+                # No matching action found, use the default action.
+                action = action[0]
+            else:
+                # Use the matching action.
+                action = matching_actions[0]
+
     print(action)
 
-    
-
     currentTime = int(round(time() * 1000))
+    # Mouse controls
     if action == 'Move mouse left':
         if lastAction != action or  currentTime - lastActionTime > mouseStopThresholdTime:
             mouseSpeed = mouseInitialSpeed
@@ -202,6 +264,8 @@ def performAction(action):
     elif action == 'Mouse double click':
         if lastAction != action or  currentTime - lastActionTime > clickThresholdTime:
             mouse.click(MouseButton.left, 2)
+
+    # Keyboard actions
     elif action == 'Space':
         if lastAction != action or  currentTime - lastActionTime > thresholdTime:
             keyboard.press(Key.space)
@@ -218,6 +282,25 @@ def performAction(action):
         if lastAction != action or  currentTime - lastActionTime > thresholdTime:
             keyboard.press(Key.esc)
             keyboard.release(Key.esc)
+
+    # App commands
+    elif action == 'Quit':
+        if lastAction != action or  currentTime - lastActionTime > thresholdTime:
+            # show_toast(window, 'Stopping remote control', on_close=exitApplication)
+            window.after(0, lambda: show_toast(window, 'Stopping remote control', on_close=exitApplication))
+    elif action == 'Mode':
+        if lastAction != action or  currentTime - lastActionTime > thresholdTime:
+            if len(availableModes) > 1:
+                if actionMode is None:
+                    # Assign the first mode
+                    actionIndex = 0
+                else:
+                    # Assign the next mode
+                    actionIndex = (availableModes.index(actionMode) + 1) % len(availableModes)
+                actionMode = availableModes[actionIndex]
+            window.after(0, lambda: show_toast(window, f'Switched to {actionMode} mode', timeout=3000))
+
+    # Navigation controls
     elif action == 'Up arrow':
         if lastAction != action or  currentTime - lastActionTime > thresholdTime:
             keyboard.press(Key.up)
@@ -234,6 +317,8 @@ def performAction(action):
         if lastAction != action or  currentTime - lastActionTime > thresholdTime:
             keyboard.press(Key.right)
             keyboard.release(Key.right)
+
+    # Typing actions
     elif action == 'Type 0':
         if lastAction != action or  currentTime - lastActionTime > thresholdTime:
             keyboard.press('0')
