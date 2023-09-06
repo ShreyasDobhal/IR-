@@ -6,7 +6,7 @@ import serial
 from serial import Serial
 
 # Importing constants
-from values import ARDUINO_PORT, BAUD_RATE
+from values import ARDUINO_PORT, BAUD_RATE, WINDOW_SIZE, WINDOW_LOCATION
 from colors import color
 from controls import actions
 
@@ -23,8 +23,8 @@ import pickle
 arduino = Serial(ARDUINO_PORT, BAUD_RATE, timeout=0.1)
 
 # Application configuration
-windowSize = [400,450]
-windowLocation = [750,200]
+windowSize = WINDOW_SIZE
+windowLocation = WINDOW_LOCATION
 windowTitle = "IR +"
 window = Tk()
 
