@@ -169,6 +169,7 @@ def toggleIRThread():
         stopIRThread()
     else:
         startIRThread()
+        window.after(0, lambda: show_toast(window, 'Starting remote control'))
 
 
 def startDetection():
@@ -320,7 +321,6 @@ def performAction(action):
     # App commands
     elif action == 'Quit':
         if lastAction != action or  currentTime - lastActionTime > thresholdTime:
-            # show_toast(window, 'Stopping remote control', on_close=exitApplication)
             window.after(0, lambda: show_toast(window, 'Stopping remote control', on_close=exitApplication))
     elif action == 'Mode':
         if lastAction != action or  currentTime - lastActionTime > thresholdTime:
