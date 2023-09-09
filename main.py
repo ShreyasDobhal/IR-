@@ -10,7 +10,7 @@ from serial import Serial
 # Importing constants
 from values import (ARDUINO_PORT, BAUD_RATE, WINDOW_SIZE, WINDOW_LOCATION,
                     MOUSE_ACCELERATION, MOUSE_STOP_THRESHOLD_TIME,
-                    MOUSE_INITIAL_SPEED, MOUSE_MAX_SPEED)
+                    MOUSE_INITIAL_SPEED, MOUSE_MAX_SPEED, DEVICE_DESC)
 from colors import color
 from controls import actions, combine_actions
 
@@ -23,25 +23,45 @@ from time import sleep
 from time import time
 import pickle
 
+import argparse
 
+parser = argparse.ArgumentParser(description='Starter script to run the IR signal detection process.')
+parser.add_argument('--no_ui', action='store_true', help='Flag to decide whether we should render a UI or not.')
+args = parser.parse_args()
 
 # arduino microcontroller object
-# arduino = None
-
-# ports = serial.tools.list_ports.comports()
-# for port, desc, hwid in sorted(ports):
-#     print(f"Port: {port}, Description: {desc}, Hardware ID: {hwid}")
-
-
-arduino = Serial(ARDUINO_PORT, BAUD_RATE, timeout=0.1)
+arduino = None
 
 # Application configuration
 windowSize = WINDOW_SIZE
 windowLocation = WINDOW_LOCATION
 windowTitle = "IR +"
 window = Tk()
-# # Hide the main tkinter window
-# window.withdraw()
+
+autoStartFlag = False
+
+def exitApplication():
+    global isReceiverRunning
+    isReceiverRunning = False
+    window.destroy()
+    exit()
+
+if args.no_ui:
+    # Hide the main tkinter window
+    print('Running in hidden mode.')
+    autoStartFlag = True
+    window.withdraw()
+
+ports = serial.tools.list_ports.comports()
+for port, desc, hwid in sorted(ports):
+    if DEVICE_DESC in desc:
+        print(f"{port}")
+        arduino = Serial(port, BAUD_RATE, timeout=0.1)
+
+if arduino is None:
+    print("Arduino not connected")
+    show_toast(window, 'Arduino not connected', on_close=exitApplication)
+
 
 # Pynput configuration
 mouse = MouseController()
@@ -72,12 +92,6 @@ mouseSpeed = 0
 
 PICKLE_FILE_PATH = 'data.pkl'
 
-
-def exitApplication():
-    global isReceiverRunning
-    isReceiverRunning = False 
-    window.destroy()
-    exit()
 
 def resetConfiguration():
     global configMap, messageLabelText
@@ -370,7 +384,7 @@ def performAction(action):
 
 
 def drawUI():
-    global commandBoxText, toggleBtnText, messageLabelText, performActionFlag
+    global commandBoxText, toggleBtnText, messageLabelText, performActionFlag, autoStartFlag
 
     window.geometry(str(windowSize[0]) + "x" + str(windowSize[1]) + "+" + str(windowLocation[0]) + "+" + str(windowLocation[1]) + "")
     window.title(windowTitle)
@@ -416,7 +430,16 @@ def drawUI():
     
     # Exit button
     Button(window,text="Exit",font=("times new roman",15),bg=color['ButtonBG'],fg=color['NormalText'],command=exitApplication).grid(row=8,columnspan=2,sticky=W+E+N+S,padx=5,pady=5)
-    
+
+    if autoStartFlag:
+        autoStartFlag = False
+        # UI is hidden, so automatically start the detection.
+        toggleIRThread()
+
+        # Perform action check button
+        performActionFlag.set(1)
+
+
     window.mainloop()
 
 def main():
@@ -431,31 +454,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-
-# {
-#     '2D0': 'Move mouse left',
-#     'CD0': 'Move mouse right',
-#     '2F0': 'Move mouse up', 
-#     'AF0': 'Move mouse down', 
-#     'A70': 'Space', 
-#     '5CE9': 'Mouse left click', 
-#     'D10': 'Mouse right click', 
-#     '1A422E43': 'Move mouse left', 
-#     'A23BD824': 'Move mouse right', 
-#     'EC27D43D': 'Move mouse up', 
-#     '86BD99C': 'Move mouse down',
-#     '910': 'Type 0', 
-#     '10': 'Type 1', 
-#     '810': 'Type a b c 2', 
-#     '410': 'Type d e f 3', 
-#     'C10': 'Type g h i 4',
-#     '210': 'Type j k l 5', 
-#     'A10': 'Type m n o 6', 
-#     '610': 'Type p q r s 7',
-#     'E10': 'Type t u v 8', 
-#     '110': 'Type w x y z 9', 
-#     '62E9': 'Escape'
-# }
