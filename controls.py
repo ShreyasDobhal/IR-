@@ -8,7 +8,8 @@ actions = {
         'Move mouse down',
         'Mouse left click',
         'Mouse right click',
-        'Mouse double click'
+        'Mouse double click',
+        'Mouse movement wildcard'
     ],
     'Keyboard actions': [
         'Space',

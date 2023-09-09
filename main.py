@@ -4,10 +4,13 @@ from toast_message import show_toast
 
 # Arduino modules
 import serial 
+import serial.tools.list_ports
 from serial import Serial
 
 # Importing constants
-from values import ARDUINO_PORT, BAUD_RATE, WINDOW_SIZE, WINDOW_LOCATION
+from values import (ARDUINO_PORT, BAUD_RATE, WINDOW_SIZE, WINDOW_LOCATION,
+                    MOUSE_ACCELERATION, MOUSE_STOP_THRESHOLD_TIME,
+                    MOUSE_INITIAL_SPEED, MOUSE_MAX_SPEED)
 from colors import color
 from controls import actions, combine_actions
 
@@ -21,7 +24,15 @@ from time import time
 import pickle
 
 
-# Setup arduino
+
+# arduino microcontroller object
+# arduino = None
+
+# ports = serial.tools.list_ports.comports()
+# for port, desc, hwid in sorted(ports):
+#     print(f"Port: {port}, Description: {desc}, Hardware ID: {hwid}")
+
+
 arduino = Serial(ARDUINO_PORT, BAUD_RATE, timeout=0.1)
 
 # Application configuration
@@ -53,10 +64,10 @@ typingIndex = 0
 actionMode = None
 availableModes = []
 
-mouseAcceleration = 0.25
-mouseStopThresholdTime = 500
-mouseInitialSpeed = 5
-mouseMaxSpeed = 30
+mouseAcceleration = MOUSE_ACCELERATION
+mouseStopThresholdTime = MOUSE_STOP_THRESHOLD_TIME
+mouseInitialSpeed = MOUSE_INITIAL_SPEED
+mouseMaxSpeed = MOUSE_MAX_SPEED
 mouseSpeed = 0
 
 PICKLE_FILE_PATH = 'data.pkl'
@@ -227,10 +238,17 @@ def performAction(action):
                 # Use the matching action.
                 action = matching_actions[0]
 
-    print(action)
-
     currentTime = int(round(time() * 1000))
     # Mouse controls
+    if action == 'Mouse movement wildcard':
+        if lastAction != action or  currentTime - lastActionTime > clickThresholdTime:
+            if lastAction in actions['Mouse control'] and lastAction != 'Mouse movement wildcard':
+                # We used mouse navigation, and now we are receiving wildcard
+                # signal. So continue navigating the mouse based on lastAction
+                action = lastAction
+
+    print(action)
+
     if action == 'Move mouse left':
         if lastAction != action or  currentTime - lastActionTime > mouseStopThresholdTime:
             mouseSpeed = mouseInitialSpeed
@@ -255,6 +273,7 @@ def performAction(action):
         else:
             mouseSpeed = min(mouseSpeed + mouseAcceleration, mouseMaxSpeed)
         mouse.move(0, mouseSpeed)
+
     elif action == 'Mouse left click':
         if lastAction != action or  currentTime - lastActionTime > clickThresholdTime:
             mouse.click(MouseButton.left, 1)
@@ -264,6 +283,7 @@ def performAction(action):
     elif action == 'Mouse double click':
         if lastAction != action or  currentTime - lastActionTime > clickThresholdTime:
             mouse.click(MouseButton.left, 2)
+
 
     # Keyboard actions
     elif action == 'Space':
