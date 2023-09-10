@@ -67,6 +67,12 @@ for port, desc, hwid in sorted(ports):
 python main.py
 ```
 
+You can also run the python file in no UI mode.
+
+```
+python main.py --no_ui
+```
+
 **Step 2)** Reset any old existing configuration, using the "Reset" button
 
 **Step 3)** Click on "Start", making sure "Enable actions" in disabled.
