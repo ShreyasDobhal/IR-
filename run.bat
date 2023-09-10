@@ -1,0 +1,1 @@
+@start /min py.exe main.py --no_ui %*

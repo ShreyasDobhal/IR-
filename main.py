@@ -10,7 +10,8 @@ from serial import Serial
 # Importing constants
 from values import (ARDUINO_PORT, BAUD_RATE, WINDOW_SIZE, WINDOW_LOCATION,
                     MOUSE_ACCELERATION, MOUSE_STOP_THRESHOLD_TIME,
-                    MOUSE_INITIAL_SPEED, MOUSE_MAX_SPEED, DEVICE_DESC)
+                    MOUSE_INITIAL_SPEED, MOUSE_MAX_SPEED, DEVICE_DESC,
+                    THRESHOLD_TIME, TYPING_THRESHOLD_TIME, CLICK_THRESHOLD_TIME)
 from colors import color
 from controls import actions, combine_actions
 
@@ -77,9 +78,9 @@ decodedSignal = ''
 configMap = {}
 lastAction = ''
 lastActionTime = 0
-thresholdTime = 700
-typingThresholdTime = 100
-clickThresholdTime = 100
+thresholdTime = THRESHOLD_TIME
+typingThresholdTime = TYPING_THRESHOLD_TIME
+clickThresholdTime = CLICK_THRESHOLD_TIME
 typingIndex = 0
 actionMode = None
 availableModes = []
@@ -254,16 +255,32 @@ def performAction(action):
                 action = matching_actions[0]
 
     currentTime = int(round(time() * 1000))
-    # Mouse controls
+
+    # Mouse wildcard handling
     if action == 'Mouse movement wildcard':
-        if lastAction != action or  currentTime - lastActionTime > clickThresholdTime:
-            if lastAction in actions['Mouse control'] and lastAction != 'Mouse movement wildcard':
-                # We used mouse navigation, and now we are receiving wildcard
-                # signal. So continue navigating the mouse based on lastAction
-                action = lastAction
+        # if lastAction != action or  currentTime - lastActionTime > clickThresholdTime:
+        if lastAction in actions['Mouse control'] and lastAction != 'Mouse movement wildcard':
+            # We used mouse navigation, and now we are receiving wildcard
+            # signal. So continue navigating the mouse based on lastAction
+            action = lastAction
+
+    # Typing wildcard handling
+    if action == 'Typing wildcard':
+        if lastAction in actions['Typing'] and lastAction != 'Typing wildcard':
+            # We are typing, and now we are receiving wildcard
+            # signal. So continue the typing logic
+            action = lastAction
+
+    # Navigation wildcard handling
+    if action == 'Navigation wildcard':
+        if lastAction in actions['Navigation control'] and lastAction != 'Typing wildcard':
+            # We are using navigation controls, and now we are receiving wildcard
+            # signal. So continue the navigation logic
+            action = lastAction
 
     print(action)
 
+    # Mouse controls
     if action == 'Move mouse left':
         if lastAction != action or  currentTime - lastActionTime > mouseStopThresholdTime:
             mouseSpeed = mouseInitialSpeed

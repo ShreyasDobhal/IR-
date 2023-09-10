@@ -25,7 +25,8 @@ actions = {
         'Up arrow',
         'Down arrow',
         'Left arrow',
-        'Right arrow'
+        'Right arrow',
+        'Navigation wildcard'
     ],
     'Typing': [
         'Type 0',
@@ -37,7 +38,8 @@ actions = {
         'Type m n o 6',
         'Type p q r s 7',
         'Type t u v 8',
-        'Type w x y z 9'
+        'Type w x y z 9',
+        'Typing wildcard'
     ],
 }
 
